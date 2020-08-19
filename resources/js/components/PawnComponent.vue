@@ -1,7 +1,7 @@
 <template>
     <div class="figure" @mousedown="sendMouseDown" @mouseup="sendMouseUp">
-        <span>Pawn</span>
-        <span v-if="playersPiece">mine</span>
+        <v-img v-if="pieceColor=='white'"contain src="https://images.chesscomfiles.com/chess-themes/pieces/alpha/150/wp.png"></v-img>
+        <v-img v-else-if="pieceColor=='black'" contain src="https://images.chesscomfiles.com/chess-themes/pieces/alpha/150/bp.png"></v-img>
     </div>
 </template>
 
@@ -10,9 +10,9 @@
         name: "PawnComponent",
 
         props: {
-            playersPiece: {
+            pieceColor: {
                 required: true,
-                type: Boolean,
+                type: String,
             },
             currentRow: {
                 required: true,
@@ -21,11 +21,15 @@
             currentColumn: {
                 required: true,
                 type: Number,
+            },
+            movedAtLeastOnce: {
+                required: true,
+                type: Boolean,
             }
         },
 
         data: () => ({
-            pieceType: "pawn",
+            pieceType: "p",
         }),
 
 

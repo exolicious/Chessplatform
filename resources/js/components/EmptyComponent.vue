@@ -1,5 +1,5 @@
 <template>
-    <div class="figure"  @mousedown="sendMouseDown" @mouseup="sendMouseUp">
+    <div class="figure" @mousedown="sendMouseDown" @mouseup="sendMouseUp">
         <span>-</span>
     </div>
 </template>
@@ -8,8 +8,24 @@
     export default {
         name: "EmptyComponent",
 
+        props: {
+            pieceColor: {
+                required: true,
+                type: String,
+            },
+            currentRow: {
+                required: true,
+                type: Number,
+            },
+            currentColumn: {
+                required: true,
+                type: Number,
+            }
+        },
 
-
+        data: () => ({
+            pieceType: "",
+        }),
 
         methods: {
             sendMouseDown() {

@@ -1945,9 +1945,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "BishopComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
       required: true,
-      type: Boolean
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    }
+  },
+  methods: {
+    sendMouseDown: function sendMouseDown() {
+      this.$emit("clicked", this);
+    },
+    sendMouseUp: function sendMouseUp() {
+      this.$emit("stopclick", this);
     }
   }
 });
@@ -1990,6 +2006,62 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -2011,20 +2083,48 @@ __webpack_require__.r(__webpack_exports__);
   data: function data() {
     return {
       playerColor: "white",
-      boardState: [["r", "n", "b", "q", "k", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "q", "k", "b", "n", "r"]],
-      boardCoordinates: [["a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"], ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"], ["a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6"], ["a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5"], ["a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4"], ["a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3"], ["a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2"], ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"]],
-      activePieceLegalMoves: [],
-      activePiece: null
+      boardState: [],
+      boardCoordinates: [],
+      playerPiecesCoordinates: [],
+      activePieceLegalSquares: [],
+      activePieceType: "",
+      pawnDiagonalMoves: [],
+      dragging: false,
+      atLeastOnePieceMoved: false,
+      lastMovedPiecePos: null,
+      //needed to set the playerPiece attribute after a player moved a piece and a render of component occurs with a row value other than 7 or 8
+      originPosition: null
     };
   },
   mounted: function mounted() {
     var _this = this;
 
+    this.setColorSpecificState();
     document.addEventListener('mouseleave', function () {
-      _this.activePiece = "";
+      _this.dragging = false;
     });
   },
   methods: {
+    setColorSpecificState: function setColorSpecificState() {
+      if (this.playerColor == "white") {
+        this.boardState = [["r", "n", "b", "q", "k", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "p", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "q", "k", "b", "n", "r"]];
+        this.boardCoordinates = [["a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"], ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"], ["a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6"], ["a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5"], ["a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4"], ["a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3"], ["a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2"], ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"]];
+      } else if (this.playerColor == "black") {
+        this.boardState = [["r", "n", "b", "k", "q", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "k", "q", "b", "n", "r"]];
+        this.boardCoordinates = [["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"], ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"], ["h3", "g3", "f3", "e3", "d3", "c3", "b3", "a3"], ["h4", "g4", "f4", "e4", "d4", "c4", "b4", "a4"], ["h5", "g5", "f5", "e5", "d5", "c5", "b5", "a5"], ["h6", "g6", "f6", "e6", "d6", "c6", "b6", "a6"], ["h7", "g7", "f7", "e7", "d7", "c7", "b7", "a7"], ["h8", "g8", "f8", "e8", "d8", "c8", "b8", "a8"]];
+      }
+
+      for (var i = 5; i < 8; i++) {
+        for (var j = 0; j < 8; j++) {
+          this.playerPiecesCoordinates.push(this.boardCoordinates[i][j]);
+        }
+      }
+    },
+    darkSquared: function darkSquared(_row, _column) {
+      return {
+        'dark-square': (_column + _row) % 2 == 1
+      };
+    },
     getYCoordinate: function getYCoordinate(_row, _column) {
       if (this.playerColor == "black") {
         if (_column == 1) {
@@ -2037,71 +2137,91 @@ __webpack_require__.r(__webpack_exports__);
         }
       }
     },
-    setPlayerPiece: function setPlayerPiece(_row) {
-      if (_row >= 7) {
+    setPlayerPiece: function setPlayerPiece(_row, _column) {
+      if (!this.lastMovedPiecePos) {
+        if (_row >= 6) {
+          return false;
+        }
+
+        return true;
+      } else if (this.lastMovedPiecePos.currentRow == _row && this.lastMovedPiecePos.currentColumn == _column) {
+        return true;
+      }
+    },
+    setPieceColor: function setPieceColor(_row, _column) {
+      if (this.playerColor == "white") {
+        if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+          return this.playerColor;
+        } else {
+          return "black";
+        }
+      } else if (this.playerColor == "black") {
+        if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+          return this.playerColor;
+        } else {
+          return "white";
+        }
+      }
+    },
+    setMovedAtLeastOnce: function setMovedAtLeastOnce(_row) {
+      if (_row < 6) {
         return true;
       }
 
       return false;
     },
-    darkSquared: function darkSquared(_row, _column) {
-      return {
-        'dark-square': (_column + _row) % 2 == 1
-      };
-    },
-    getComponent: function getComponent(_row, _column) {
-      var pieceCode = this.boardState[_row - 1][_column - 1];
-
-      if (pieceCode == "p") {
-        return _PawnComponent__WEBPACK_IMPORTED_MODULE_0__["default"];
-      } else if (pieceCode == "r") {
-        return _RookComponent__WEBPACK_IMPORTED_MODULE_1__["default"];
-      } else if (pieceCode == "n") {
-        return _KnightComponent__WEBPACK_IMPORTED_MODULE_2__["default"];
-      } else if (pieceCode == "b") {
-        return _BishopComponent__WEBPACK_IMPORTED_MODULE_3__["default"];
-      } else if (pieceCode == "q") {
-        return _QueenComponent__WEBPACK_IMPORTED_MODULE_5__["default"];
-      } else if (pieceCode == "k") {
-        return _KingComponent__WEBPACK_IMPORTED_MODULE_4__["default"];
-      } else {
-        return _EmptyComponent__WEBPACK_IMPORTED_MODULE_6__["default"];
-      }
-    },
-    placePawns: function placePawns(_row) {},
-    placeRooks: function placeRooks(_row, _column) {},
-    placeKnights: function placeKnights(_row, _column) {},
-    placeBishops: function placeBishops(_row, _column) {},
-    placeKings: function placeKings(_row, _column) {},
-    placeQueens: function placeQueens(_row, _column) {
-      if (_row == 1 && _column == 4 || _row == 8 && _column == 4) {
-        return true;
-      }
-    },
     //MOVE RELATED METHODS
-    handleClick: function handleClick(_pieceInstance) {
-      if (_pieceInstance.playersPiece) {
-        this.activePiece = _pieceInstance;
+    handleClick: function handleClick(_originSquare, _legalSquares) {
+      if (_originSquare.pieceColor == this.playerColor) {
+        this.dragging = true;
+        this.activePieceType = _originSquare.pieceType;
+        this.originPosition = {
+          originRow: _originSquare.currentRow,
+          originColumn: _originSquare.currentColumn
+        };
 
-        if (_pieceInstance.pieceType == "pawn") {
-          this.activePieceLegalMoves.push({
-            row: _pieceInstance.currentRow - 1,
-            column: _pieceInstance.currentColumn
-          });
+        if (_originSquare.pieceType == "p") {
+          this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn]);
+          this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn - 1]);
+          this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn + 1]);
+
+          if (!_originSquare.movedAtLeastOnce) {
+            this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 2][_originSquare.currentColumn]);
+          }
+        }
+
+        this.activePieceType = _originSquare.pieceType;
+      }
+    },
+    handleMouseUp: function handleMouseUp(_targetSquare) {
+      if (_targetSquare.pieceColor != this.playerColor) {
+        var targetCoordinate = this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn];
+
+        switch (this.activePieceType) {
+          case "p":
+            this.handlePawnMovement(_targetSquare, targetCoordinate);
+            break;
         }
       }
+
+      this.activePieceType = "";
+      this.activePieceLegalSquares = [];
     },
-    handleMouseUp: function handleMouseUp(_pieceInstance) {
-      if (!_pieceInstance.$attrs.playersPiece) {
-        var pos = {
-          row: _pieceInstance.$attrs.currentRow,
-          column: _pieceInstance.$attrs.currentColumn
-        };
-        _pieceInstance = this.activePiece;
+    handlePawnMovement: function handlePawnMovement(_targetSquare, _targetCoordinate) {
+      if (this.activePieceLegalSquares.includes(_targetCoordinate) || this.pawnDiagonalMoves.includes(_targetCoordinate) && _targetSquare.pieceColor != "") {
+        Vue.set(this.boardState[_targetSquare.currentRow], _targetSquare.currentColumn, this.activePieceType);
+        this.playerPiecesCoordinates.push(this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn]);
+        Vue.set(this.boardState[this.originPosition.originRow], this.originPosition.originColumn, "");
+        var indexOfSpliceTarget = this.playerPiecesCoordinates.indexOf(this.boardCoordinates[this.originPosition.originRow][this.originPosition.originColumn]);
+        this.playerPiecesCoordinates.splice(indexOfSpliceTarget, 1);
       }
 
-      this.activePiece = null;
-      this.activePieceLegalMoves = [];
+      this.pawnDiagonalMoves = [];
+    }
+  },
+  computed: {
+    boardStateComp: function boardStateComp() {
+      return this.boardState;
     }
   }
 });
@@ -2125,6 +2245,25 @@ __webpack_require__.r(__webpack_exports__);
 //
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "EmptyComponent",
+  props: {
+    pieceColor: {
+      required: true,
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    }
+  },
+  data: function data() {
+    return {
+      pieceType: ""
+    };
+  },
   methods: {
     sendMouseDown: function sendMouseDown() {
       this.$emit("clicked", this);
@@ -2189,9 +2328,29 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "KingComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
+      required: true,
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    },
+    movedAtLeastOnce: {
       required: true,
       type: Boolean
+    }
+  },
+  methods: {
+    sendMouseDown: function sendMouseDown() {
+      this.$emit("clicked", this);
+    },
+    sendMouseUp: function sendMouseUp() {
+      this.$emit("stopclick", this);
     }
   }
 });
@@ -2217,9 +2376,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "KnightComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
       required: true,
-      type: Boolean
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    }
+  },
+  methods: {
+    sendMouseDown: function sendMouseDown() {
+      this.$emit("clicked", this);
+    },
+    sendMouseUp: function sendMouseUp() {
+      this.$emit("stopclick", this);
     }
   }
 });
@@ -2245,9 +2420,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "PawnComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
       required: true,
-      type: Boolean
+      type: String
     },
     currentRow: {
       required: true,
@@ -2256,11 +2431,15 @@ __webpack_require__.r(__webpack_exports__);
     currentColumn: {
       required: true,
       type: Number
+    },
+    movedAtLeastOnce: {
+      required: true,
+      type: Boolean
     }
   },
   data: function data() {
     return {
-      pieceType: "pawn"
+      pieceType: "p"
     };
   },
   methods: {
@@ -2294,9 +2473,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "QueenComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
       required: true,
-      type: Boolean
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    }
+  },
+  methods: {
+    sendMouseDown: function sendMouseDown() {
+      this.$emit("clicked", this);
+    },
+    sendMouseUp: function sendMouseUp() {
+      this.$emit("stopclick", this);
     }
   }
 });
@@ -2322,9 +2517,25 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "RookComponent",
   props: {
-    playersPiece: {
+    pieceColor: {
       required: true,
-      type: Boolean
+      type: String
+    },
+    currentRow: {
+      required: true,
+      type: Number
+    },
+    currentColumn: {
+      required: true,
+      type: Number
+    }
+  },
+  methods: {
+    sendMouseDown: function sendMouseDown() {
+      this.$emit("clicked", this);
+    },
+    sendMouseUp: function sendMouseUp() {
+      this.$emit("stopclick", this);
     }
   }
 });
@@ -6763,7 +6974,7 @@ exports = module.exports = __webpack_require__(/*! ../../../node_modules/css-loa
 
 
 // module
-exports.push([module.i, "\n.figure[data-v-a7da2f3c] {\n    display: flex;\n    cursor: pointer;\n    justify-content: space-evenly;\n    align-items: center;\n    width: 100%;\n}\n.dark-square[data-v-a7da2f3c] {\n    background-color: #1d3a4e;\n}\n", ""]);
+exports.push([module.i, "\n.no-select[data-v-a7da2f3c] {\n    -webkit-user-select: none;\n       -moz-user-select: none;\n        -ms-user-select: none;\n            user-select: none;\n}\n.figure[data-v-a7da2f3c] {\n    display: flex;\n    cursor: pointer;\n    justify-content: space-evenly;\n    align-items: center;\n    width: 100%;\n    height: 100%;\n}\n.dark-square[data-v-a7da2f3c] {\n    background-color: #1d3a4e;\n}\n", ""]);
 
 // exports
 
@@ -38582,11 +38793,33 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "figure" }, [
-    _c("span", [_vm._v("Bishop")]),
-    _vm._v(" "),
-    _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-  ])
+  return _c(
+    "div",
+    {
+      staticClass: "figure",
+      on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
+    },
+    [
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wb.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/bb.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38612,7 +38845,8 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c(
     "v-container",
-    _vm._l(8, function(row) {
+    { staticClass: "no-select" },
+    _vm._l(_vm.boardStateComp, function(row, indexRow) {
       return _c(
         "v-row",
         {
@@ -38623,35 +38857,113 @@ var render = function() {
             "background-color": "#a1cbef"
           }
         },
-        _vm._l(8, function(column) {
+        _vm._l(row, function(column, indexColumn) {
           return _c(
             "div",
             {
-              class: _vm.darkSquared(row, column),
+              class: _vm.darkSquared(indexRow, indexColumn),
               staticStyle: { width: "12.5%", height: "100%" }
             },
             [
-              _c(
-                "span",
-                {
-                  staticStyle: {
-                    "padding-top": "5px",
-                    "padding-left": "5px",
-                    "z-index": "200"
-                  }
-                },
-                [_vm._v(_vm._s(_vm.getYCoordinate(row, column)))]
-              ),
+              column == "p"
+                ? _c("pawn-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn,
+                      movedAtLeastOnce: _vm.setMovedAtLeastOnce(indexRow)
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
               _vm._v(" "),
-              _c(_vm.getComponent(row, column), {
-                tag: "component",
-                attrs: {
-                  playersPiece: _vm.setPlayerPiece(row),
-                  currentRow: row,
-                  currentColumn: column
-                },
-                on: { clicked: _vm.handleClick, stopclick: _vm.handleMouseUp }
-              })
+              column == "r"
+                ? _c("rook-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              column == "n"
+                ? _c("knight-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              column == "b"
+                ? _c("bishop-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              column == "q"
+                ? _c("queen-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              column == "k"
+                ? _c("king-component", {
+                    attrs: {
+                      pieceColor: _vm.setPieceColor(indexRow, indexColumn),
+                      currentRow: indexRow,
+                      currentColumn: indexColumn,
+                      movedAtLeastOnce: _vm.setMovedAtLeastOnce(indexRow)
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              column == ""
+                ? _c("empty-component", {
+                    attrs: {
+                      pieceColor: "",
+                      currentRow: indexRow,
+                      currentColumn: indexColumn
+                    },
+                    on: {
+                      clicked: _vm.handleClick,
+                      stopclick: _vm.handleMouseUp
+                    }
+                  })
+                : _vm._e()
             ],
             1
           )
@@ -38762,11 +39074,33 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "figure" }, [
-    _c("span", [_vm._v("King")]),
-    _vm._v(" "),
-    _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-  ])
+  return _c(
+    "div",
+    {
+      staticClass: "figure",
+      on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
+    },
+    [
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wk.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/bk.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38790,11 +39124,33 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "figure" }, [
-    _c("span", [_vm._v("Knight")]),
-    _vm._v(" "),
-    _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-  ])
+  return _c(
+    "div",
+    {
+      staticClass: "figure",
+      on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
+    },
+    [
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wn.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/bn.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38825,10 +39181,25 @@ var render = function() {
       on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
     },
     [
-      _c("span", [_vm._v("Pawn")]),
-      _vm._v(" "),
-      _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-    ]
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "https://images.chesscomfiles.com/chess-themes/pieces/alpha/150/wp.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "https://images.chesscomfiles.com/chess-themes/pieces/alpha/150/bp.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
   )
 }
 var staticRenderFns = []
@@ -38853,11 +39224,33 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "figure" }, [
-    _c("span", [_vm._v("Queen")]),
-    _vm._v(" "),
-    _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-  ])
+  return _c(
+    "div",
+    {
+      staticClass: "figure",
+      on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
+    },
+    [
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wq.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/bq.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38881,11 +39274,33 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "figure" }, [
-    _c("span", [_vm._v("Rook")]),
-    _vm._v(" "),
-    _vm.playersPiece ? _c("span", [_vm._v("mine")]) : _vm._e()
-  ])
+  return _c(
+    "div",
+    {
+      staticClass: "figure",
+      on: { mousedown: _vm.sendMouseDown, mouseup: _vm.sendMouseUp }
+    },
+    [
+      _vm.pieceColor == "white"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wr.png"
+            }
+          })
+        : _vm.pieceColor == "black"
+        ? _c("v-img", {
+            attrs: {
+              contain: "",
+              src:
+                "//images.chesscomfiles.com/chess-themes/pieces/alpha/150/br.png"
+            }
+          })
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -95613,8 +96028,8 @@ __webpack_require__.r(__webpack_exports__);
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! D:\Entwicklung\chess\resources\js\app.js */"./resources/js/app.js");
-module.exports = __webpack_require__(/*! D:\Entwicklung\chess\resources\sass\app.scss */"./resources/sass/app.scss");
+__webpack_require__(/*! D:\Entwicklung\Chessplatform\resources\js\app.js */"./resources/js/app.js");
+module.exports = __webpack_require__(/*! D:\Entwicklung\Chessplatform\resources\sass\app.scss */"./resources/sass/app.scss");
 
 
 /***/ })

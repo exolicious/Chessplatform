@@ -1,7 +1,7 @@
 <template>
-    <div class="figure">
-        <span>King</span>
-        <span v-if="playersPiece">mine</span>
+    <div class="figure" @mousedown="sendMouseDown" @mouseup="sendMouseUp">
+        <v-img v-if="pieceColor=='white'"contain src="//images.chesscomfiles.com/chess-themes/pieces/alpha/150/wk.png"></v-img>
+        <v-img v-else-if="pieceColor=='black'" contain src="//images.chesscomfiles.com/chess-themes/pieces/alpha/150/bk.png"></v-img>
     </div>
 </template>
 
@@ -10,9 +10,30 @@
         name: "KingComponent",
 
         props: {
-            playersPiece: {
+            pieceColor: {
+                required: true,
+                type: String,
+            },
+            currentRow: {
+                required: true,
+                type: Number,
+            },
+            currentColumn: {
+                required: true,
+                type: Number,
+            },
+            movedAtLeastOnce: {
                 required: true,
                 type: Boolean,
+            }
+        },
+
+        methods: {
+            sendMouseDown() {
+                this.$emit("clicked", this);
+            },
+            sendMouseUp() {
+                this.$emit("stopclick", this);
             }
         }
     }

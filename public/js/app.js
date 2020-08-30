@@ -1958,12 +1958,73 @@ __webpack_require__.r(__webpack_exports__);
       type: Number
     }
   },
+  data: function data() {
+    return {
+      pieceType: "b"
+    };
+  },
   methods: {
     sendMouseDown: function sendMouseDown() {
       this.$emit("clicked", this);
     },
     sendMouseUp: function sendMouseUp() {
       this.$emit("stopclick", this);
+    },
+    getLegalMoves: function getLegalMoves() {
+      var legalMoves = [];
+
+      for (var i = 1; i < 8; i++) {
+        //handle array out of bounds cases but still get all possible diagonal movements
+        if (this.currentRow - i >= 0 && this.currentColumn + i < 8) {
+          legalMoves.push({
+            row: this.currentRow - i,
+            column: this.currentColumn + i,
+            type: "bishopMove"
+          });
+        }
+
+        if (this.currentRow - i >= 0 && this.currentColumn - i >= 0) {
+          legalMoves.push({
+            row: this.currentRow - i,
+            column: this.currentColumn - i,
+            type: "bishopMove"
+          });
+        }
+
+        if (this.currentRow + i < 8 && this.currentColumn - i >= 0) {
+          legalMoves.push({
+            row: this.currentRow + i,
+            column: this.currentColumn - i,
+            type: "bishopMove"
+          });
+        }
+
+        if (this.currentRow + i < 8 && this.currentColumn + i < 8) {
+          legalMoves.push({
+            row: this.currentRow + i,
+            column: this.currentColumn + i,
+            type: "bishopMove"
+          });
+        }
+      }
+
+      return legalMoves;
+    },
+    moveCanOccur: function moveCanOccur(_boardState, _move) {
+      if (_move.type == "pawnMove") {
+        //check Obstruction
+        for (var i = _move.row; i < this.currentRow; i++) {
+          if (_boardState[i][this.currentColumn] != "") {
+            return false;
+          }
+        }
+      } else if (_move.type == "pawnCapture") {
+        if (_boardState[_move.row][_move.column] == "") {
+          return false;
+        }
+      }
+
+      return true;
     }
   }
 });
@@ -1986,6 +2047,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _KingComponent__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./KingComponent */ "./resources/js/components/KingComponent.vue");
 /* harmony import */ var _QueenComponent__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./QueenComponent */ "./resources/js/components/QueenComponent.vue");
 /* harmony import */ var _EmptyComponent__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./EmptyComponent */ "./resources/js/components/EmptyComponent.vue");
+function _createForOfIteratorHelper(o, allowArrayLike) { var it; if (typeof Symbol === "undefined" || o[Symbol.iterator] == null) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = o[Symbol.iterator](); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
 //
 //
 //
@@ -2084,16 +2151,17 @@ __webpack_require__.r(__webpack_exports__);
     return {
       playerColor: "white",
       boardState: [],
-      boardCoordinates: [],
+      boardSquares: [],
       playerPiecesCoordinates: [],
-      activePieceLegalSquares: [],
-      activePieceType: "",
-      pawnDiagonalMoves: [],
+      //activePieceLegalSquares: [],
+      //pawnDiagonalMoves: [],
+      //activePieceType: "",
+      currentMove: {},
       dragging: false,
       atLeastOnePieceMoved: false,
-      lastMovedPiecePos: null,
-      //needed to set the playerPiece attribute after a player moved a piece and a render of component occurs with a row value other than 7 or 8
-      originPosition: null
+      lastMovedPiecePos: null //needed to set the playerPiece attribute after a player moved a piece and a render of component occurs with a row value other than 7 or 8
+      // originPosition: null
+
     };
   },
   mounted: function mounted() {
@@ -2107,16 +2175,16 @@ __webpack_require__.r(__webpack_exports__);
   methods: {
     setColorSpecificState: function setColorSpecificState() {
       if (this.playerColor == "white") {
-        this.boardState = [["r", "n", "b", "q", "k", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "p", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "q", "k", "b", "n", "r"]];
-        this.boardCoordinates = [["a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"], ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"], ["a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6"], ["a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5"], ["a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4"], ["a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3"], ["a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2"], ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"]];
+        this.boardState = [["r", "n", "b", "q", "k", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "q", "k", "b", "n", "r"]];
+        this.boardSquares = [["a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"], ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"], ["a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6"], ["a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5"], ["a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4"], ["a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3"], ["a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2"], ["a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"]];
       } else if (this.playerColor == "black") {
         this.boardState = [["r", "n", "b", "k", "q", "b", "n", "r"], ["p", "p", "p", "p", "p", "p", "p", "p"], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["", "", "", "", "", "", "", ""], ["p", "p", "p", "p", "p", "p", "p", "p"], ["r", "n", "b", "k", "q", "b", "n", "r"]];
-        this.boardCoordinates = [["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"], ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"], ["h3", "g3", "f3", "e3", "d3", "c3", "b3", "a3"], ["h4", "g4", "f4", "e4", "d4", "c4", "b4", "a4"], ["h5", "g5", "f5", "e5", "d5", "c5", "b5", "a5"], ["h6", "g6", "f6", "e6", "d6", "c6", "b6", "a6"], ["h7", "g7", "f7", "e7", "d7", "c7", "b7", "a7"], ["h8", "g8", "f8", "e8", "d8", "c8", "b8", "a8"]];
+        this.boardSquares = [["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"], ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"], ["h3", "g3", "f3", "e3", "d3", "c3", "b3", "a3"], ["h4", "g4", "f4", "e4", "d4", "c4", "b4", "a4"], ["h5", "g5", "f5", "e5", "d5", "c5", "b5", "a5"], ["h6", "g6", "f6", "e6", "d6", "c6", "b6", "a6"], ["h7", "g7", "f7", "e7", "d7", "c7", "b7", "a7"], ["h8", "g8", "f8", "e8", "d8", "c8", "b8", "a8"]];
       }
 
       for (var i = 5; i < 8; i++) {
         for (var j = 0; j < 8; j++) {
-          this.playerPiecesCoordinates.push(this.boardCoordinates[i][j]);
+          this.playerPiecesCoordinates.push(this.boardSquares[i][j]);
         }
       }
     },
@@ -2150,13 +2218,13 @@ __webpack_require__.r(__webpack_exports__);
     },
     setPieceColor: function setPieceColor(_row, _column) {
       if (this.playerColor == "white") {
-        if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+        if (this.playerPiecesCoordinates.includes(this.boardSquares[_row][_column])) {
           return this.playerColor;
         } else {
           return "black";
         }
       } else if (this.playerColor == "black") {
-        if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+        if (this.playerPiecesCoordinates.includes(this.boardSquares[_row][_column])) {
           return this.playerColor;
         } else {
           return "white";
@@ -2171,57 +2239,57 @@ __webpack_require__.r(__webpack_exports__);
       return false;
     },
     //MOVE RELATED METHODS
-    handleClick: function handleClick(_originSquare, _legalSquares) {
-      if (_originSquare.pieceColor == this.playerColor) {
+    handleClick: function handleClick(_originInstance, _legalSquares) {
+      if (_originInstance.pieceColor == this.playerColor) {
         this.dragging = true;
-        this.activePieceType = _originSquare.pieceType;
-        this.originPosition = {
-          originRow: _originSquare.currentRow,
-          originColumn: _originSquare.currentColumn
-        };
+        this.currentMove.activePieceType = _originInstance.pieceType;
+        this.currentMove.originInstance = _originInstance;
+        this.currentMove.activePieceLegalMoves = _originInstance.getLegalMoves();
+      }
+    },
+    handleMouseUp: function handleMouseUp(_targetInstance) {
+      if (_targetInstance.pieceColor != this.playerColor) {
+        //this needs to change for rochade (later)
+        var targetSquare = this.boardSquares[_targetInstance.currentRow][_targetInstance.currentColumn];
+        this.checkMove(_targetInstance, targetSquare);
+      }
 
-        if (_originSquare.pieceType == "p") {
-          this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn]);
-          this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn - 1]);
-          this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn + 1]);
+      this.currentMove.activePieceType = "";
+      this.currentMove.activePieceLegalMoves = [];
+    },
+    checkMove: function checkMove(_targetInstance, _targetSquare) {
+      var legalMove = null;
 
-          if (!_originSquare.movedAtLeastOnce) {
-            this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 2][_originSquare.currentColumn]);
+      var _iterator = _createForOfIteratorHelper(this.currentMove.activePieceLegalMoves),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var move = _step.value;
+
+          if (this.boardSquares[move.row][move.column] == _targetSquare) {
+            legalMove = move;
+            break;
           }
         }
-
-        this.activePieceType = _originSquare.pieceType;
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
       }
-    },
-    handleMouseUp: function handleMouseUp(_targetSquare) {
-      if (_targetSquare.pieceColor != this.playerColor) {
-        var targetCoordinate = this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn];
 
-        switch (this.activePieceType) {
-          case "p":
-            this.handlePawnMovement(_targetSquare, targetCoordinate);
-            break;
+      if (legalMove) {
+        if (this.currentMove.originInstance.moveCanOccur(this.boardState, legalMove)) {
+          this.updateState(_targetInstance);
         }
       }
-
-      this.activePieceType = "";
-      this.activePieceLegalSquares = [];
     },
-    handlePawnMovement: function handlePawnMovement(_targetSquare, _targetCoordinate) {
-      if (this.activePieceLegalSquares.includes(_targetCoordinate) || this.pawnDiagonalMoves.includes(_targetCoordinate) && _targetSquare.pieceColor != "") {
-        Vue.set(this.boardState[_targetSquare.currentRow], _targetSquare.currentColumn, this.activePieceType);
-        this.playerPiecesCoordinates.push(this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn]);
-        Vue.set(this.boardState[this.originPosition.originRow], this.originPosition.originColumn, "");
-        var indexOfSpliceTarget = this.playerPiecesCoordinates.indexOf(this.boardCoordinates[this.originPosition.originRow][this.originPosition.originColumn]);
-        this.playerPiecesCoordinates.splice(indexOfSpliceTarget, 1);
-      }
-
-      this.pawnDiagonalMoves = [];
-    }
-  },
-  computed: {
-    boardStateComp: function boardStateComp() {
-      return this.boardState;
+    updateState: function updateState(_targetInstance) {
+      Vue.set(this.boardState[_targetInstance.currentRow], _targetInstance.currentColumn, this.currentMove.activePieceType);
+      this.playerPiecesCoordinates.push(this.boardSquares[_targetInstance.currentRow][_targetInstance.currentColumn]);
+      Vue.set(this.boardState[this.currentMove.originInstance.currentRow], this.currentMove.originInstance.currentColumn, "");
+      var indexOfSpliceTarget = this.playerPiecesCoordinates.indexOf(this.boardSquares[this.currentMove.originInstance.currentRow][this.currentMove.originInstance.currentColumn]);
+      this.playerPiecesCoordinates.splice(indexOfSpliceTarget, 1);
     }
   }
 });
@@ -2448,6 +2516,50 @@ __webpack_require__.r(__webpack_exports__);
     },
     sendMouseUp: function sendMouseUp() {
       this.$emit("stopclick", this);
+    },
+    getLegalMoves: function getLegalMoves() {
+      var legalMoves = [];
+      legalMoves.push({
+        row: this.currentRow - 1,
+        column: this.currentColumn,
+        type: "pawnMove"
+      });
+
+      if (!this.movedAtLeastOnce) {
+        legalMoves.push({
+          row: this.currentRow - 2,
+          column: this.currentColumn,
+          type: "pawnMove"
+        });
+      }
+
+      legalMoves.push({
+        row: this.currentRow - 1,
+        column: this.currentColumn - 1,
+        type: "pawnCapture"
+      });
+      legalMoves.push({
+        row: this.currentRow - 1,
+        column: this.currentColumn + 1,
+        type: "pawnCapture"
+      });
+      return legalMoves;
+    },
+    moveCanOccur: function moveCanOccur(_boardState, _move) {
+      if (_move.type == "pawnMove") {
+        //check Obstruction
+        for (var i = _move.row; i < this.currentRow; i++) {
+          if (_boardState[i][this.currentColumn] != "") {
+            return false;
+          }
+        }
+      } else if (_move.type == "pawnCapture") {
+        if (_boardState[_move.row][_move.column] == "") {
+          return false;
+        }
+      }
+
+      return true;
     }
   }
 });
@@ -38846,7 +38958,7 @@ var render = function() {
   return _c(
     "v-container",
     { staticClass: "no-select" },
-    _vm._l(_vm.boardStateComp, function(row, indexRow) {
+    _vm._l(_vm.boardState, function(row, indexRow) {
       return _c(
         "v-row",
         {

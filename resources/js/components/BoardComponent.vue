@@ -1,6 +1,6 @@
 <template>
     <v-container class="no-select">
-        <v-row v-for="(row,indexRow) in boardStateComp" style="margin: auto; width: 600px; height: 75px;
+        <v-row v-for="(row,indexRow) in boardState" style="margin: auto; width: 600px; height: 75px;
          background-color: #a1cbef">
             <div v-for="(column,indexColumn) in row" :class="darkSquared(indexRow,indexColumn)" style="width: 12.5%; height: 100%;">
                 <!--<span style="padding-top: 5px; padding-left: 5px; z-index: 200">{{getYCoordinate(row,column)}}</span>-->
@@ -98,15 +98,16 @@
         data: () => ({
             playerColor: "white",
             boardState: [],
-            boardCoordinates: [],
+            boardSquares: [],
             playerPiecesCoordinates: [],
-            activePieceLegalSquares: [],
-            activePieceType: "",
-            pawnDiagonalMoves: [],
+            //activePieceLegalSquares: [],
+            //pawnDiagonalMoves: [],
+            //activePieceType: "",
+            currentMove: {},
             dragging: false,
             atLeastOnePieceMoved: false,
             lastMovedPiecePos: null, //needed to set the playerPiece attribute after a player moved a piece and a render of component occurs with a row value other than 7 or 8
-            originPosition: null
+            // originPosition: null
         }),
 
         mounted() {
@@ -126,11 +127,11 @@
                             ["", "", "", "", "", "", "", ""],
                             ["", "", "", "", "", "", "", ""],
                             ["", "", "", "", "", "", "", ""],
-                            ["", "", "p", "", "", "", "", ""],
+                            ["", "", "", "", "", "", "", ""],
                             ["p", "p", "p", "p", "p", "p", "p", "p"],
                             ["r", "n", "b", "q", "k", "b", "n", "r"]
                         ];
-                    this.boardCoordinates =
+                    this.boardSquares =
                         [
                             ["a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8"],
                             ["a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7"],
@@ -153,7 +154,7 @@
                             ["p", "p", "p", "p", "p", "p", "p", "p"],
                             ["r", "n", "b", "k", "q", "b", "n", "r"]
                         ];
-                    this.boardCoordinates =
+                    this.boardSquares =
                         [
                             ["h1", "g1", "f1", "e1", "d1", "c1", "b1", "a1"],
                             ["h2", "g2", "f2", "e2", "d2", "c2", "b2", "a2"],
@@ -167,7 +168,7 @@
                 }
                 for (let i = 5; i < 8; i++) {
                     for (let j = 0; j < 8; j++) {
-                        this.playerPiecesCoordinates.push(this.boardCoordinates[i][j]);
+                        this.playerPiecesCoordinates.push(this.boardSquares[i][j]);
                     }
                 }
             },
@@ -204,13 +205,13 @@
 
             setPieceColor(_row, _column) {
                 if (this.playerColor == "white") {
-                    if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+                    if (this.playerPiecesCoordinates.includes(this.boardSquares[_row][_column])) {
                         return this.playerColor;
                     } else {
                         return "black";
                     }
                 } else if (this.playerColor == "black") {
-                    if (this.playerPiecesCoordinates.includes(this.boardCoordinates[_row][_column])) {
+                    if (this.playerPiecesCoordinates.includes(this.boardSquares[_row][_column])) {
                         return this.playerColor;
                     } else {
                         return "white";
@@ -227,56 +228,47 @@
 
             //MOVE RELATED METHODS
 
-            handleClick(_originSquare, _legalSquares) {
-                if (_originSquare.pieceColor == this.playerColor) {
+            handleClick(_originInstance, _legalSquares) {
+                if (_originInstance.pieceColor == this.playerColor) {
                     this.dragging = true;
-                    this.activePieceType = _originSquare.pieceType;
-                    this.originPosition = {
-                        originRow: _originSquare.currentRow,
-                        originColumn: _originSquare.currentColumn
-                    };
-                    if (_originSquare.pieceType == "p") {
-                        this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn]);
-                        this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn - 1]);
-                        this.pawnDiagonalMoves.push(this.boardCoordinates[_originSquare.currentRow - 1][_originSquare.currentColumn + 1]);
-                        if(!_originSquare.movedAtLeastOnce) {
-                            this.activePieceLegalSquares.push(this.boardCoordinates[_originSquare.currentRow - 2][_originSquare.currentColumn]);
-                        }
-                    }
-                    this.activePieceType = _originSquare.pieceType;
+                    this.currentMove.activePieceType = _originInstance.pieceType;
+                    this.currentMove.originInstance = _originInstance;
+                    this.currentMove.activePieceLegalMoves = _originInstance.getLegalMoves();
                 }
             },
 
-            handleMouseUp(_targetSquare) {
-                if (_targetSquare.pieceColor != this.playerColor) {
-                    let targetCoordinate = this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn];
-                    switch (this.activePieceType) {
-                        case "p":
-                            this.handlePawnMovement(_targetSquare, targetCoordinate);
-                            break;
+            handleMouseUp(_targetInstance) {
+                if (_targetInstance.pieceColor != this.playerColor) { //this needs to change for rochade (later)
+                    let targetSquare = this.boardSquares[_targetInstance.currentRow][_targetInstance.currentColumn];
+                    this.checkMove(_targetInstance, targetSquare);
+                }
+                this.currentMove.activePieceType = "";
+                this.currentMove.activePieceLegalMoves = [];
+            },
+
+            checkMove(_targetInstance, _targetSquare) {
+                let legalMove = null;
+                for(let move of this.currentMove.activePieceLegalMoves) {
+                    if(this.boardSquares[move.row][move.column] == _targetSquare) {
+                        legalMove = move;
+                        break;
                     }
                 }
-                this.activePieceType = "";
-                this.activePieceLegalSquares = [];
-            },
-
-            handlePawnMovement(_targetSquare, _targetCoordinate) {
-                if (this.activePieceLegalSquares.includes(_targetCoordinate) || this.pawnDiagonalMoves.includes(_targetCoordinate) && _targetSquare.pieceColor != "") {
-                    Vue.set(this.boardState[_targetSquare.currentRow], _targetSquare.currentColumn, this.activePieceType);
-                    this.playerPiecesCoordinates.push(this.boardCoordinates[_targetSquare.currentRow][_targetSquare.currentColumn])
-                    Vue.set(this.boardState[this.originPosition.originRow], this.originPosition.originColumn, "");
-                    let indexOfSpliceTarget = this.playerPiecesCoordinates.indexOf(this.boardCoordinates[this.originPosition.originRow][this.originPosition.originColumn]);
-                    this.playerPiecesCoordinates.splice(indexOfSpliceTarget, 1);
+                if(legalMove) {
+                    if(this.currentMove.originInstance.moveCanOccur(this.boardState, legalMove)) {
+                        this.updateState(_targetInstance);
+                    }
                 }
-                this.pawnDiagonalMoves = [];
             },
-        },
 
-        computed: {
-            boardStateComp() {
-                return this.boardState;
+            updateState(_targetInstance) {
+                Vue.set(this.boardState[_targetInstance.currentRow], _targetInstance.currentColumn, this.currentMove.activePieceType);
+                this.playerPiecesCoordinates.push(this.boardSquares[_targetInstance.currentRow][_targetInstance.currentColumn])
+                Vue.set(this.boardState[this.currentMove.originInstance.currentRow], this.currentMove.originInstance.currentColumn, "");
+                let indexOfSpliceTarget = this.playerPiecesCoordinates.indexOf(this.boardSquares[this.currentMove.originInstance.currentRow][this.currentMove.originInstance.currentColumn]);
+                this.playerPiecesCoordinates.splice(indexOfSpliceTarget, 1);
             }
-        }
+        },
     }
 
 </script>

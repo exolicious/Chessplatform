@@ -1,5 +1,5 @@
 <template>
-    <v-container class="no-select">
+    <v-container @mousemove="handleMove" class="no-select">
         <v-row v-for="(row,indexRow) in boardState" style="margin: auto; width: 600px; height: 75px;
          background-color: #a1cbef">
             <div v-for="(column,indexColumn) in row" :class="darkSquared(indexRow,indexColumn)" style="width: 12.5%; height: 100%;">
@@ -105,6 +105,7 @@
             //activePieceType: "",
             currentMove: {},
             dragging: false,
+            dragElement: null,
             atLeastOnePieceMoved: false,
             lastMovedPiecePos: null, //needed to set the playerPiece attribute after a player moved a piece and a render of component occurs with a row value other than 7 or 8
             // originPosition: null
@@ -228,8 +229,20 @@
 
             //MOVE RELATED METHODS
 
-            handleClick(_originInstance, _legalSquares) {
+            handleClick(_originInstance) {
                 if (_originInstance.pieceColor == this.playerColor) {
+                    this.dragElement = document.createElement("img");
+                    let self = this;
+                    this.dragElement.addEventListener( 'load', function () {
+                        self.dragElement.style.position = "absolute";
+                        self.dragElement.style.width = "75px";
+                        self.dragElement.style.height = "75px";
+                        self.dragElement.style.pointerEvents = "none";
+                        document.body.appendChild(self.dragElement);
+                    });
+                    let imgSrc = _originInstance.$el.firstChild.children[1].style.backgroundImage;
+                    this.dragElement.src = imgSrc.substring(5, imgSrc.length - 2);
+
                     this.dragging = true;
                     this.currentMove.activePieceType = _originInstance.pieceType;
                     this.currentMove.originInstance = _originInstance;
@@ -237,7 +250,19 @@
                 }
             },
 
+            handleMove(_event) {
+                if(this.dragging) {
+                    this.dragElement.style.left = _event.x - this.dragElement.offsetWidth/2 + "px";
+                    this.dragElement.style.top = _event.y - this.dragElement.offsetHeight/2 + "px";
+                }
+            },
+
             handleMouseUp(_targetInstance) {
+                this.dragging = false;
+                if(this.dragElement) {
+                    this.dragElement.remove();
+                    this.dragElement = null;
+                }
                 if (_targetInstance.pieceColor != this.playerColor) { //this needs to change for rochade (later)
                     let targetSquare = this.boardSquares[_targetInstance.currentRow][_targetInstance.currentColumn];
                     this.checkMove(_targetInstance, targetSquare);

@@ -74,17 +74,48 @@
             },
 
             moveCanOccur(_boardState, _move) {
-                if(_move.type == "pawnMove") {
-                    //check Obstruction
-                    for(let i = _move.row; i < this.currentRow; i++) {
-                        if(_boardState[i][this.currentColumn] != "") {
+                if(_move.row < this.currentRow && _move.column < this.currentColumn) {
+                    let i = _move.row + 1;
+                    let k = _move.column + 1; // substract 1 cause the actual destination can either be an empty piece or an enemy one (it cant be one´s own piece since that aleady gets handled earlier see BoardComponent handleMouseUp function)
+                    while(i < this.currentRow && k < this.currentColumn) {
+                        if (_boardState[i][k] != "") {
                             return false;
                         }
+                        i++;
+                        k++;
                     }
                 }
-                else if(_move.type == "pawnCapture") {
-                    if(_boardState[_move.row][_move.column] == "") {
-                        return false;
+                else if(_move.row < this.currentRow && _move.column > this.currentColumn) {
+                    let i = _move.row + 1;
+                    let k = _move.column - 1;
+                    while (i < this.currentRow && k > this.currentColumn) {
+                        if (_boardState[i][k] != "") {
+                            return false;
+                        }
+                        i++;
+                        k--;
+                    }
+                }
+                else if(_move.row > this.currentRow && _move.column < this.currentColumn) {
+                    let i = _move.row - 1;
+                    let k = _move.column - 1;
+                    while (i > this.currentRow && k < this.currentColumn) {
+                        if (_boardState[i][k] != "") {
+                            return false;
+                        }
+                        i--;
+                        k++;
+                    }
+                }
+                else if(_move.row > this.currentRow && _move.column > this.currentColumn) {
+                    let i = _move.row - 1;
+                    let k = _move.column - 1;
+                    while (i > this.currentRow && k > this.currentColumn) {
+                        if (_boardState[i][k] != "") {
+                            return false;
+                        }
+                        i--;
+                        k--;
                     }
                 }
                 return true;
